@@ -8,10 +8,15 @@ import (
 	"os"
 )
 
+var hasError = false
+
+const CODE_INVALID_USAGE = 64
+const CODE_ERROR = 65
+
 func main() {
 	if len(os.Args) > 2 {
 		fmt.Println("Usage: glox [script]")
-		os.Exit(64)
+		os.Exit(CODE_INVALID_USAGE)
 	} else if len(os.Args) == 2 {
 		if err := runFile(os.Args[1]); err != nil {
 			panic(err) // TODO exit more smarterly
@@ -21,6 +26,10 @@ func main() {
 			panic(err)
 		}
 	}
+
+	if hasError {
+		os.Exit(CODE_ERROR)
+	}
 }
 
 func runFile(path string) error {
@@ -28,7 +37,10 @@ func runFile(path string) error {
 	if err != nil {
 		return err
 	}
-	return run(string(data))
+	if err := run(string(data)); err != nil {
+		return err
+	}
+	return nil
 }
 
 func runPrompt() error {
@@ -46,10 +58,24 @@ func runPrompt() error {
 		if err := run(line); err != nil {
 			return err
 		}
+		hasError = false
 	}
 }
 
 func run(source string) error {
-	fmt.Printf("%s\n", source)
+	scanner := NewScanner(source)
+	tokens := scanner.scanTokens()
+	for _, token := range tokens {
+		fmt.Println("%s", token)
+	}
 	return nil
+}
+
+func lerror(line int, message string) {
+	report(line, "", message)
+}
+
+func report(line int, where string, message string) {
+	fmt.Printf("[line %d] Error%s: %s\n", line, where, message)
+	hasError = true
 }
