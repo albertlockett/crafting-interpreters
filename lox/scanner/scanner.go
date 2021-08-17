@@ -1,4 +1,4 @@
-package main
+package scanner
 
 import (
 	"fmt"
@@ -31,17 +31,19 @@ type Scanner struct {
 	start   int
 	current int
 	line    int
+	onError func(line int, message string)
 }
 
-func NewScanner(source string) *Scanner {
+func NewScanner(source string, onError func(line int, message string)) *Scanner {
 	return &Scanner{
 		line:   1,
 		source: source,
 		tokens: make([]*token.Token, 0),
+		onError: onError,
 	}
 }
 
-func (s *Scanner) scanTokens() []*token.Token {
+func (s *Scanner) ScanTokens() []*token.Token {
 	for !s.isAtEnd() {
 		s.start = s.current
 		s.scanToken()
@@ -119,7 +121,7 @@ func (s *Scanner) scanToken() {
 		} else if s.isAlpha(c) {
 			s.identifier()
 		} else {
-			lerror(s.line, "Unexpected character")
+			s.onError(s.line, "Unexpected character")
 		}
 	}
 }
@@ -174,7 +176,7 @@ func (s *Scanner) string() {
 	}
 
 	if s.isAtEnd() {
-		lerror(s.line, "Unterminated string.")
+		s.onError(s.line, "Unterminated string.")
 		return
 	}
 	s.advance() // the closing "
@@ -203,7 +205,7 @@ func (s *Scanner) number() {
 	v := s.source[s.start:s.current]
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
-		lerror(s.line, fmt.Sprint("lexer invalid number %s", v))
+		s.onError(s.line, fmt.Sprint("lexer invalid number %s", v))
 	}
 	s.addToken(token.NUMBER, f)
 }

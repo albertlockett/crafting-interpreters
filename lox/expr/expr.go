@@ -55,7 +55,7 @@ func (l *Literal) Accept(v Visitor) interface{} {
 
 // Unary
 type Unary struct {
-	Token *token.Token
+	Operator *token.Token
 	Right Expr
 }
 
