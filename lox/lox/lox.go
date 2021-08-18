@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/albertlockett/crafting-interpreters-go/lox/interpreter"
 	"github.com/albertlockett/crafting-interpreters-go/lox/parser"
 	"github.com/albertlockett/crafting-interpreters-go/lox/scanner"
 	"github.com/albertlockett/crafting-interpreters-go/lox/token"
@@ -13,10 +14,10 @@ import (
 
 var HasError = false
 
+var Interpreter = interpreter.Interpreter{}
+
 const CODE_INVALID_USAGE = 64
 const CODE_ERROR = 65
-
-
 
 func RunFile(path string) error {
 	data, err := ioutil.ReadFile(path)
@@ -65,7 +66,10 @@ func run(source string) error {
 	}
 
 	printer := &AstPrinter{}
-	fmt.Printf("%s", printer.Print(ast))
+	fmt.Printf("ast: %s\n", printer.Print(ast))
+
+	val := Interpreter.Interpret(ast)
+	fmt.Printf("val: %v\n", val)
 
 	return nil
 }

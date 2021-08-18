@@ -7,21 +7,10 @@ type Expr interface {
 }
 
 type Visitor interface {
-	VisitAssign(*Assign) interface{}
 	VisitBinary(*Binary) interface{}
 	VisitGrouping(*Grouping) interface{}
 	VisitLiteral(*Literal) interface{}
 	VisitUnary(*Unary) interface{}
-}
-
-// Assign
-type Assign struct {
-	Name  string
-	Value Expr
-}
-
-func (a *Assign) Accept(v Visitor) interface{} {
-	return v.VisitAssign(a)
 }
 
 // Binary

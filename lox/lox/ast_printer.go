@@ -12,7 +12,7 @@ func (a *AstPrinter) Print(e expr.Expr) interface{} {
 	return e.Accept(a)
 }
 
-func (a *AstPrinter) parenthesize(name string, exprs ... expr.Expr) string {
+func (a *AstPrinter) parenthesize(name string, exprs ...expr.Expr) string {
 	strs := make([]string, 0)
 	strs = append(strs, fmt.Sprintf("(%s", name))
 	for _, e := range exprs {
@@ -20,10 +20,6 @@ func (a *AstPrinter) parenthesize(name string, exprs ... expr.Expr) string {
 	}
 	strs = append(strs, ")")
 	return strings.Join(strs, "")
-}
-
-func (a *AstPrinter) VisitAssign(e *expr.Assign) interface{} {
-	return a.parenthesize(e.Name, e.Value)
 }
 
 func (a *AstPrinter) VisitBinary(e *expr.Binary) interface{} {

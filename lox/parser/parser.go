@@ -18,6 +18,10 @@ func NewParser(tokens []*token.Token, onError func(t *token.Token, message strin
 	return &Parser{tokens: tokens, onError: onError}
 }
 
+func (p *Parser) Parse() (expr.Expr, error) {
+	return p.expression()
+}
+
 func (p *Parser) match(t ...token.TokenType) bool {
 	for _, ttype := range t {
 		if p.check(ttype) {
@@ -57,10 +61,6 @@ func (p *Parser) error(token *token.Token, message string) ParseError {
 
 func (p *Parser) previous() *token.Token {
 	return p.tokens[p.current-1]
-}
-
-func (p *Parser) Parse() (expr.Expr, error) {
-	return p.expression()
 }
 
 func (p *Parser) consume(ttype token.TokenType, message string) (*token.Token, error) {
