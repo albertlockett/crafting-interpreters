@@ -9,6 +9,15 @@ import (
 type Interpreter struct {
 }
 
+type RuntimeError struct {
+	Line    int
+	message string
+}
+
+func (e *RuntimeError) Error() string {
+	return e.message
+}
+
 func (i *Interpreter) Interpret(e expr.Expr) interface{} {
 	return i.evaluate(e)
 }
@@ -92,6 +101,10 @@ func (i *Interpreter) VisitBinary(e *expr.Binary) interface{} {
 		if okl && okr {
 			return dl + dr
 		}
+		panic(&RuntimeError{
+			message: "Operands must be two numbers or two strings",
+			Line: e.Operator.Line,
+		})
 
 	case token.SLASH:
 		dl, _ := left.(float64)

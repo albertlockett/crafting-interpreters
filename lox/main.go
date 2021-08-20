@@ -23,4 +23,8 @@ func main() {
 	if lox.HasError {
 		os.Exit(lox.CODE_ERROR)
 	}
+
+	if lox.HasRuntimeError {
+		os.Exit(lox.CODE_RUNTIME_ERROR)
+	}
 }

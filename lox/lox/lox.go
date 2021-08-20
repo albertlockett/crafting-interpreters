@@ -13,11 +13,13 @@ import (
 )
 
 var HasError = false
+var HasRuntimeError = true
 
 var Interpreter = interpreter.Interpreter{}
 
 const CODE_INVALID_USAGE = 64
 const CODE_ERROR = 65
+const CODE_RUNTIME_ERROR = 70
 
 func RunFile(path string) error {
 	data, err := ioutil.ReadFile(path)
@@ -67,6 +69,20 @@ func run(source string) error {
 
 	printer := &AstPrinter{}
 	fmt.Printf("ast: %s\n", printer.Print(ast))
+
+	defer func() {
+		r := recover()
+		if runtimeError, ok := r.(*interpreter.RuntimeError); ok {
+			fmt.Printf(
+				"RuntimeError: %s\n[line %d]\n",
+				runtimeError.Error(),
+				runtimeError.Line)
+			HasRuntimeError = true
+		} else {
+			panic(r)
+		}
+
+	}()
 
 	val := Interpreter.Interpret(ast)
 	fmt.Printf("val: %v\n", val)
