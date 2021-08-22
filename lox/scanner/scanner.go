@@ -59,9 +59,9 @@ func (s *Scanner) scanToken() {
 		s.addToken(token.LEFT_PAREN, nil)
 	case ')':
 		s.addToken(token.RIGHT_PAREN, nil)
-	case '[':
+	case '{':
 		s.addToken(token.LEFT_BRACE, nil)
-	case ']':
+	case '}':
 		s.addToken(token.RIGHT_BRACE, nil)
 	case ',':
 		s.addToken(token.COMMA, nil)

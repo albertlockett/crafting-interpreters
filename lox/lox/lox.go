@@ -10,12 +10,13 @@ import (
 	"github.com/albertlockett/crafting-interpreters-go/lox/token"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
 var HasError = false
-var HasRuntimeError = true
+var HasRuntimeError = false
 
-var Interpreter = interpreter.Interpreter{}
+var Interpreter = interpreter.NewInterpreter()
 
 const CODE_INVALID_USAGE = 64
 const CODE_ERROR = 65
@@ -52,13 +53,23 @@ func RunPrompt() error {
 }
 
 func run(source string) error {
+	fmt.Printf("~~~ SOURCE ~~~\n")
+	lines := strings.Split(source, "\n")
+	for i := range lines {
+		fmt.Printf("%d  %s\n", i+1, lines[i])
+	}
+	fmt.Printf("~~~~~~~~~~~~~~\n\n")
+
 
 	// scan the tokens
 	s := scanner.NewScanner(source, Lerror)
 	tokens := s.ScanTokens()
+
+	fmt.Printf("~~ TOKENS ~~\n")
 	for _, t := range tokens {
 		fmt.Printf("%s\n", t)
 	}
+	fmt.Printf("~~~~~~~~~~~~\n\n")
 
 	// parse the tokens
 	p := parser.NewParser(tokens, Terror)
@@ -67,8 +78,10 @@ func run(source string) error {
 		return nil
 	}
 
+	fmt.Printf("~~ AST/STATEMENTS ~~\n")
 	printer := &AstPrinter{}
 	fmt.Printf("%s\n", printer.PrintStmts(stmts))
+	fmt.Printf("~~~~~~~~~~~~~~~~~~~~\n\n")
 
 	// handle panics
 	defer func() {
@@ -87,8 +100,10 @@ func run(source string) error {
 		}
 	}()
 
+	fmt.Printf("~~~ OUTPUT ~~~\n")
 	val := Interpreter.Interpret(stmts)
-	fmt.Printf("val: %v\n", val)
+	fmt.Printf("~~~~~~~~~~~~~~\n")
+	fmt.Printf("\n~~~ INTERPRETER ~~~\n retval: %v\n~~~~~~~~~~~~~~~~~~~\n", val)
 
 	return nil
 }

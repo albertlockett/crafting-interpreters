@@ -46,12 +46,28 @@ func (a *AstPrinter) withSemicolon(text interface{}) string {
 
 // stmt.Visitor interface
 
+func (a *AstPrinter) VisitVar(v *stmt.Var) interface{} {
+	return a.withSemicolon(a.parenthesize(fmt.Sprintf("var %s =", v.Name.Lexeme), v.Initializer))
+}
+
 func (a *AstPrinter) VisitExpressionStmt(s *stmt.ExpressionStmt) interface {} {
 	return a.withSemicolon(s.Expression.Accept(a));
 }
 
 func (a *AstPrinter ) VisitPrint(s *stmt.Print) interface{} {
 	return a.withSemicolon(a.parenthesize("print", s.Expression))
+}
+
+func (a *AstPrinter ) VisitBlock(b *stmt.Block) interface{} {
+	vals := make([]string, 0)
+	vals = append(vals, "{")
+
+	for i := range b.Statements {
+		val := a.PrintStmt(b.Statements[i])
+		vals = append(vals, val.(string))
+	}
+	vals = append(vals, "}")
+	return strings.Join(vals, "")
 }
 
 // expr.Visitor interface
@@ -76,4 +92,8 @@ func (a *AstPrinter) VisitLiteral(e *expr.Literal) interface{} {
 
 func (a *AstPrinter) VisitUnary(e *expr.Unary) interface{} {
 	return a.parenthesize(e.Operator.Lexeme, e.Right)
+}
+
+func (a *AstPrinter) VisitVarExpr(e *expr.Variable) interface{} {
+	return "var[" + e.Name.Lexeme + "]"
 }

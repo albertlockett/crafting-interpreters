@@ -11,6 +11,7 @@ type Visitor interface {
 	VisitGrouping(*Grouping) interface{}
 	VisitLiteral(*Literal) interface{}
 	VisitUnary(*Unary) interface{}
+	VisitVarExpr(*Variable) interface{}
 }
 
 // Binary
@@ -50,4 +51,14 @@ type Unary struct {
 
 func (u *Unary) Accept(v Visitor) interface{} {
 	return v.VisitUnary(u)
+}
+
+
+// Variable
+type Variable struct {
+	Name *token.Token
+}
+
+func (e *Variable) Accept(v Visitor) interface{} {
+	return v.VisitVarExpr(e)
 }

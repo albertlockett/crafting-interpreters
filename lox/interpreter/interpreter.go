@@ -9,6 +9,13 @@ import (
 )
 
 type Interpreter struct {
+	Env *Environment
+}
+
+func NewInterpreter() *Interpreter {
+	return &Interpreter{
+		Env: newEnvironment(nil),
+	}
 }
 
 type RuntimeError struct {
@@ -29,6 +36,19 @@ func (i *Interpreter) Interpret(statements []stmt.Statement) interface{} {
 
 func (i *Interpreter) execute(s stmt.Statement) {
 	s.Accept(i)
+}
+
+func (i *Interpreter) executeBlock(b *stmt.Block, env *Environment) {
+	// set scope to next scope while evaluating, then unset
+	previous := env
+	defer func() {
+		i.Env = previous
+	}()
+	i.Env = env
+
+	for j := range b.Statements {
+		i.execute(b.Statements[j])
+	}
 }
 
 func (i *Interpreter) evaluate(e expr.Expr) interface{} {
@@ -76,14 +96,28 @@ func (i *Interpreter) stringify(v interface{}) string {
 
 // stmt.Visitor interface
 
+func (i *Interpreter) VisitVar(v *stmt.Var) interface{} {
+	var value interface{} = nil
+	if v.Initializer != nil {
+		value = i.evaluate(v.Initializer)
+	}
+	i.Env.define(v.Name.Lexeme, value)
+	return nil
+}
+
 func (i *Interpreter) VisitPrint(s *stmt.Print) interface{} {
 	val := i.evaluate(s.Expression)
-	fmt.Printf("%s", i.stringify(val))
+	fmt.Printf("%s\n", i.stringify(val))
 	return nil
 }
 
 func (i *Interpreter) VisitExpressionStmt(s *stmt.ExpressionStmt) interface{} {
 	i.evaluate(s.Expression)
+	return nil
+}
+
+func (i *Interpreter) VisitBlock(b *stmt.Block) interface{} {
+	i.executeBlock(b, newEnvironment(i.Env))
 	return nil
 }
 
@@ -181,4 +215,8 @@ func (i *Interpreter) VisitUnary(e *expr.Unary) interface{} {
 		return !i.isTruthy(right)
 	}
 	return nil
+}
+
+func (i *Interpreter) VisitVarExpr(e *expr.Variable) interface{} {
+	return i.Env.get(e.Name)
 }

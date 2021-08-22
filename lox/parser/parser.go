@@ -19,11 +19,11 @@ func NewParser(tokens []*token.Token, onError func(t *token.Token, message strin
 	return &Parser{tokens: tokens, onError: onError}
 }
 
-// program -> stmt* EOF
+// program -> declaration * EOF
 func (p *Parser) Parse() ([]stmt.Statement, error) {
 	statements := make([]stmt.Statement, 0)
 	for !p.isAtEnd() {
-		statement, err := p.statement()
+		statement, err := p.declaration()
 		if err != nil {
 			return nil, err
 		}
@@ -32,13 +32,62 @@ func (p *Parser) Parse() ([]stmt.Statement, error) {
 	return statements, nil
 }
 
+// declaration -> varDeclaration
+//							| statement
+func (p *Parser) declaration() (stmt.Statement, error) {
+	var s stmt.Statement
+	var err error
+
+	if p.match(token.VAR) {
+		s, err = p.varDeclaration()
+	} else {
+		s, err = p.statement()
+	}
+
+	if err != nil {
+		if _, ok := err.(ParseError); ok {
+			p.synchronize()
+		} else {
+			return nil, err
+		}
+	}
+	return s, nil
+}
+
+// varDeclaration -> "var" IDENTIFIER ( "=" expression)? ";"
+func (p *Parser) varDeclaration() (stmt.Statement, error) {
+	name, err := p.consume(token.IDENTIFIER, "Expected variable name.")
+	if err != nil {
+		return nil, err
+	}
+
+	var initializer expr.Expr = nil
+	if p.match(token.EQUAL) {
+		initializer, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	p.consume(token.SEMICOLON, "Expected ';' after variable declaration.")
+	return &stmt.Var{
+		Name: name,
+		Initializer: initializer,
+	}, nil
+}
+
 // statement -> exprStmt
 //						| printStmt
+//						| block
 func (p *Parser) statement() (stmt.Statement, error) {
 	if p.match(token.PRINT) {
 		return p.printStatement()
 	}
-	return nil, nil
+	if p.match(token.LEFT_BRACE) {
+		return p.block()
+	}
+	// TODO we need expression statement ...
+	return nil, errors.New("TODO")
 }
 
 // printStmt -> "print" expression ";"
@@ -52,6 +101,22 @@ func (p *Parser) printStatement() (stmt.Statement, error) {
 		return nil, err
 	}
 	return &stmt.Print{Expression: expression}, nil
+}
+
+// block -> "{" declaration "}"
+func (p *Parser) block() (stmt.Statement, error) {
+	statements := make([]stmt.Statement, 0)
+	for !p.check(token.RIGHT_BRACE) && !p.isAtEnd() {
+		d, err := p.declaration()
+		statements = append(statements, d)
+		if err != nil {
+			return nil, err
+		}
+	}
+	p.consume(token.RIGHT_BRACE, "Expect '}' after block.")
+	return &stmt.Block{
+		Statements: statements,
+	}, nil
 }
 
 // expression -> equality
@@ -161,19 +226,28 @@ func (p *Parser) unary() (expr.Expr, error) {
 
 // primary  -> NUMBER | STRING | "true" | "false" | "nil"
 //					|  "(" expression ")"
+// 					| IDENTIFIER
 func (p *Parser) primary() (expr.Expr, error) {
 	if p.match(token.FALSE) {
 		return &expr.Literal{Value: false}, nil
 	}
+
 	if p.match(token.TRUE) {
 		return &expr.Literal{Value: true}, nil
 	}
+
 	if p.match(token.NIL) {
 		return &expr.Literal{Value: nil}, nil
 	}
+
 	if p.match(token.NUMBER, token.STRING) {
 		return &expr.Literal{Value: p.previous().Literal}, nil
 	}
+
+	if p.match(token.IDENTIFIER) {
+		return &expr.Variable{Name: p.previous()}, nil
+	}
+
 	if p.match(token.LEFT_PAREN) {
 		e, err := p.expression()
 		if err != nil {
@@ -236,4 +310,26 @@ func (p *Parser) consume(ttype token.TokenType, message string) (*token.Token, e
 		return p.advance(), nil
 	}
 	return nil, p.error(p.peek(), message)
+}
+
+func (p *Parser) synchronize() {
+	p.advance()
+	for !p.isAtEnd() {
+		if p.previous().Tokentype == token.SEMICOLON {
+			return
+		}
+
+		switch p.peek().Tokentype {
+		case token.CLASS:
+		case token.FOR:
+		case token.FUN:
+		case token.IF:
+		case token.PRINT:
+		case token.RETURN:
+		case token.VAR:
+		case token.WHILE:
+			return
+		}
+		p.advance()
+	}
 }
