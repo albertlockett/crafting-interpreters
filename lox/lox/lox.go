@@ -62,29 +62,32 @@ func run(source string) error {
 
 	// parse the tokens
 	p := parser.NewParser(tokens, Terror)
-	ast, _ := p.Parse()
+	stmts, _ := p.Parse()
 	if HasError {
 		return nil
 	}
 
 	printer := &AstPrinter{}
-	fmt.Printf("ast: %s\n", printer.Print(ast))
+	fmt.Printf("%s\n", printer.PrintStmts(stmts))
 
+	// handle panics
 	defer func() {
-		r := recover()
-		if runtimeError, ok := r.(*interpreter.RuntimeError); ok {
-			fmt.Printf(
-				"RuntimeError: %s\n[line %d]\n",
-				runtimeError.Error(),
-				runtimeError.Line)
-			HasRuntimeError = true
-		} else {
-			panic(r)
+		if r := recover(); r != nil {
+			// handle runtime error
+			if runtimeError, ok := r.(*interpreter.RuntimeError); ok {
+				fmt.Printf(
+					"RuntimeError[line %d]: %s\n",
+					runtimeError.Line,
+					runtimeError.Error(),
+				)
+				HasRuntimeError = true
+			} else {
+				panic(r)
+			}
 		}
-
 	}()
 
-	val := Interpreter.Interpret(ast)
+	val := Interpreter.Interpret(stmts)
 	fmt.Printf("val: %v\n", val)
 
 	return nil

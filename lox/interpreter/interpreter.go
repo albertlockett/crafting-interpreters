@@ -3,7 +3,9 @@ package interpreter
 import (
 	"fmt"
 	"github.com/albertlockett/crafting-interpreters-go/lox/expr"
+	"github.com/albertlockett/crafting-interpreters-go/lox/stmt"
 	"github.com/albertlockett/crafting-interpreters-go/lox/token"
+	"strings"
 )
 
 type Interpreter struct {
@@ -18,8 +20,15 @@ func (e *RuntimeError) Error() string {
 	return e.message
 }
 
-func (i *Interpreter) Interpret(e expr.Expr) interface{} {
-	return i.evaluate(e)
+func (i *Interpreter) Interpret(statements []stmt.Statement) interface{} {
+	for j := range statements {
+		i.execute(statements[j])
+	}
+	return nil
+}
+
+func (i *Interpreter) execute(s stmt.Statement) {
+	s.Accept(i)
 }
 
 func (i *Interpreter) evaluate(e expr.Expr) interface{} {
@@ -48,6 +57,37 @@ func (i *Interpreter) isTruthy(v interface{}) bool {
 	}
 	return true
 }
+
+func (i *Interpreter) stringify(v interface{}) string {
+	if v == nil {
+		return "nil"
+	}
+
+	if _, ok := v.(float64); ok {
+		text := fmt.Sprintf("%v", v)
+		if strings.HasSuffix(text, ".0") {
+			return text[0 : len(text)-2]
+		}
+		return text
+	}
+
+	return fmt.Sprintf("%v", v)
+}
+
+// stmt.Visitor interface
+
+func (i *Interpreter) VisitPrint(s *stmt.Print) interface{} {
+	val := i.evaluate(s.Expression)
+	fmt.Printf("%s", i.stringify(val))
+	return nil
+}
+
+func (i *Interpreter) VisitExpressionStmt(s *stmt.ExpressionStmt) interface{} {
+	i.evaluate(s.Expression)
+	return nil
+}
+
+// expr.Visitor interface:
 
 func (i *Interpreter) VisitBinary(e *expr.Binary) interface{} {
 	left := i.evaluate(e.Left)
@@ -103,7 +143,7 @@ func (i *Interpreter) VisitBinary(e *expr.Binary) interface{} {
 		}
 		panic(&RuntimeError{
 			message: "Operands must be two numbers or two strings",
-			Line: e.Operator.Line,
+			Line:    e.Operator.Line,
 		})
 
 	case token.SLASH:

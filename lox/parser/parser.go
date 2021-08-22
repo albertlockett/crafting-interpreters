@@ -3,6 +3,7 @@ package parser
 import (
 	"errors"
 	"github.com/albertlockett/crafting-interpreters-go/lox/expr"
+	"github.com/albertlockett/crafting-interpreters-go/lox/stmt"
 	"github.com/albertlockett/crafting-interpreters-go/lox/token"
 )
 
@@ -14,60 +15,43 @@ type Parser struct {
 
 type ParseError error
 
-func NewParser(tokens []*token.Token, onError func(t *token.Token, message string) ) *Parser {
+func NewParser(tokens []*token.Token, onError func(t *token.Token, message string)) *Parser {
 	return &Parser{tokens: tokens, onError: onError}
 }
 
-func (p *Parser) Parse() (expr.Expr, error) {
-	return p.expression()
-}
-
-func (p *Parser) match(t ...token.TokenType) bool {
-	for _, ttype := range t {
-		if p.check(ttype) {
-			p.advance()
-			return true
+// program -> stmt* EOF
+func (p *Parser) Parse() ([]stmt.Statement, error) {
+	statements := make([]stmt.Statement, 0)
+	for !p.isAtEnd() {
+		statement, err := p.statement()
+		if err != nil {
+			return nil, err
 		}
+		statements = append(statements, statement)
 	}
-	return false
+	return statements, nil
 }
 
-func (p *Parser) advance() *token.Token {
-	if !p.isAtEnd() {
-		p.current++
+// statement -> exprStmt
+//						| printStmt
+func (p *Parser) statement() (stmt.Statement, error) {
+	if p.match(token.PRINT) {
+		return p.printStatement()
 	}
-	return p.previous()
+	return nil, nil
 }
 
-func (p *Parser) check(ttype token.TokenType) bool {
-	if p.isAtEnd() {
-		return false
+// printStmt -> "print" expression ";"
+func (p *Parser) printStatement() (stmt.Statement, error) {
+	expression, err := p.expression()
+	if err != nil {
+		return nil, err
 	}
-	return p.peek().Tokentype == ttype
-}
-
-func (p *Parser) isAtEnd() bool {
-	return p.peek().Tokentype == token.EOF
-}
-
-func (p *Parser) peek() *token.Token {
-	return p.tokens[p.current]
-}
-
-func (p *Parser) error(token *token.Token, message string) ParseError {
-	p.onError(token, message)
-	return ParseError(errors.New(message))
-}
-
-func (p *Parser) previous() *token.Token {
-	return p.tokens[p.current-1]
-}
-
-func (p *Parser) consume(ttype token.TokenType, message string) (*token.Token, error) {
-	if p.check(ttype) {
-		return p.advance(), nil
+	_, err = p.consume(token.SEMICOLON, "Expect ';' after value.")
+	if err != nil {
+		return nil, err
 	}
-	return nil, p.error(p.peek(), message)
+	return &stmt.Print{Expression: expression}, nil
 }
 
 // expression -> equality
@@ -204,4 +188,52 @@ func (p *Parser) primary() (expr.Expr, error) {
 	}
 
 	return nil, p.error(p.peek(), "Expect Expression")
+}
+
+func (p *Parser) match(t ...token.TokenType) bool {
+	for _, ttype := range t {
+		if p.check(ttype) {
+			p.advance()
+			return true
+		}
+	}
+	return false
+}
+
+func (p *Parser) advance() *token.Token {
+	if !p.isAtEnd() {
+		p.current++
+	}
+	return p.previous()
+}
+
+func (p *Parser) check(ttype token.TokenType) bool {
+	if p.isAtEnd() {
+		return false
+	}
+	return p.peek().Tokentype == ttype
+}
+
+func (p *Parser) isAtEnd() bool {
+	return p.peek().Tokentype == token.EOF
+}
+
+func (p *Parser) peek() *token.Token {
+	return p.tokens[p.current]
+}
+
+func (p *Parser) error(token *token.Token, message string) ParseError {
+	p.onError(token, message)
+	return ParseError(errors.New(message))
+}
+
+func (p *Parser) previous() *token.Token {
+	return p.tokens[p.current-1]
+}
+
+func (p *Parser) consume(ttype token.TokenType, message string) (*token.Token, error) {
+	if p.check(ttype) {
+		return p.advance(), nil
+	}
+	return nil, p.error(p.peek(), message)
 }
