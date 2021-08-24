@@ -123,6 +123,12 @@ func (i *Interpreter) VisitBlock(b *stmt.Block) interface{} {
 
 // expr.Visitor interface:
 
+func (i *Interpreter) VisitAssignment(e *expr.Assignment) interface{} {
+	value := i.evaluate(e.Value)
+	i.Env.assign(e.Name, value)
+	return value
+}
+
 func (i *Interpreter) VisitBinary(e *expr.Binary) interface{} {
 	left := i.evaluate(e.Left)
 	right := i.evaluate(e.Right)

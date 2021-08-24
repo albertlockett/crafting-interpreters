@@ -71,7 +71,7 @@ func (p *Parser) varDeclaration() (stmt.Statement, error) {
 
 	p.consume(token.SEMICOLON, "Expected ';' after variable declaration.")
 	return &stmt.Var{
-		Name: name,
+		Name:        name,
 		Initializer: initializer,
 	}, nil
 }
@@ -87,7 +87,7 @@ func (p *Parser) statement() (stmt.Statement, error) {
 		return p.block()
 	}
 	// TODO we need expression statement ...
-	return nil, errors.New("TODO")
+	return p.expressionStmt()
 }
 
 // printStmt -> "print" expression ";"
@@ -119,9 +119,52 @@ func (p *Parser) block() (stmt.Statement, error) {
 	}, nil
 }
 
-// expression -> equality
+// expressionStmt -> expression ";"
+func (p *Parser) expressionStmt() (stmt.Statement, error) {
+	value, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.consume(token.SEMICOLON, "Exprected ';' after value.")
+	if err != nil {
+		return nil, err
+	}
+
+	return &stmt.ExpressionStmt{Expression: value}, nil
+}
+
+// expression -> assignment
 func (p *Parser) expression() (expr.Expr, error) {
-	return p.equality()
+	return p.assignment()
+}
+
+// assignment -> IDENTIFIER "=" assignment
+//						|	equality
+func (p *Parser) assignment() (expr.Expr, error) {
+	e, err := p.equality()
+	if err != nil {
+		return nil, err
+	}
+
+	if p.match(token.EQUAL) {
+		equals := p.previous()
+		value, err := p.assignment()
+		if err != nil {
+			return nil, err
+		}
+
+		if v, ok := e.(*expr.Variable); ok {
+			name := v.Name
+			return &expr.Assignment{
+				Name: name,
+				Value: value,
+			}, nil
+		}
+
+		return nil, p.error(equals, "Invalid assignment target.")
+	}
+
+	return e, nil
 }
 
 // equality -> comparison ( ( "==" | "!=" ) comparison)*

@@ -72,6 +72,10 @@ func (a *AstPrinter ) VisitBlock(b *stmt.Block) interface{} {
 
 // expr.Visitor interface
 
+func (a *AstPrinter) VisitAssignment(e *expr.Assignment) interface{} {
+	return a.parenthesize(fmt.Sprintf("%s =", e.Name.Lexeme), e.Value)
+}
+
 func (a *AstPrinter) VisitBinary(e *expr.Binary) interface{} {
 	return a.parenthesize(e.Operator.Lexeme, e.Left, e.Right)
 }

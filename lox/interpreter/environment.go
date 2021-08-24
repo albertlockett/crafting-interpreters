@@ -17,6 +17,17 @@ func newEnvironment(enclosing *Environment) *Environment {
 	}
 }
 
+func (e *Environment) assign(token *token.Token, value interface{}) {
+	if _, ok := e.values[token.Lexeme]; ok {
+		e.values[token.Lexeme] = value
+	}
+
+	panic(&RuntimeError{
+		Line:    token.Line,
+		message: fmt.Sprintf("Undefined variable %s.", token.Lexeme),
+	})
+}
+
 func (e *Environment) define(name string, value interface{}) {
 	e.values[name] = value
 }
@@ -33,6 +44,6 @@ func (e *Environment) get(token *token.Token) interface{} {
 
 	panic(&RuntimeError{
 		Line:    token.Line,
-		message: fmt.Sprintf("Undefined variable '%d'.", token.Line),
+		message: fmt.Sprintf("Undefined variable %s.", token.Lexeme),
 	})
 }

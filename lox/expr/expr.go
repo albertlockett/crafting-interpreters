@@ -7,11 +7,22 @@ type Expr interface {
 }
 
 type Visitor interface {
+	VisitAssignment(*Assignment) interface{}
 	VisitBinary(*Binary) interface{}
 	VisitGrouping(*Grouping) interface{}
 	VisitLiteral(*Literal) interface{}
 	VisitUnary(*Unary) interface{}
 	VisitVarExpr(*Variable) interface{}
+}
+
+// Assignment
+type Assignment struct {
+	Value Expr
+	Name  *token.Token
+}
+
+func (a *Assignment) Accept(v Visitor) interface{} {
+	return v.VisitAssignment(a)
 }
 
 // Binary
@@ -30,7 +41,7 @@ type Grouping struct {
 	Expression Expr
 }
 
-func (g *Grouping) Accept (v Visitor) interface{}{
+func (g *Grouping) Accept(v Visitor) interface{} {
 	return v.VisitGrouping(g)
 }
 
@@ -46,13 +57,12 @@ func (l *Literal) Accept(v Visitor) interface{} {
 // Unary
 type Unary struct {
 	Operator *token.Token
-	Right Expr
+	Right    Expr
 }
 
 func (u *Unary) Accept(v Visitor) interface{} {
 	return v.VisitUnary(u)
 }
-
 
 // Variable
 type Variable struct {
