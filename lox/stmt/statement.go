@@ -15,6 +15,7 @@ type Visitor interface {
 	VisitIfStmt(*IfStmt) interface{}
 	VisitExpressionStmt(*ExpressionStmt) interface{}
 	VisitPrint(*Print) interface{}
+	VisitWhile(*While) interface{}
 }
 
 type Var struct {
@@ -62,4 +63,14 @@ type Print struct {
 
 func (p *Print) Accept(v Visitor) interface{} {
 	return v.VisitPrint(p)
+}
+
+// While
+type While struct {
+	Condition expr.Expr
+	Body      Statement
+}
+
+func (w *While) Accept(v Visitor) interface{} {
+	return v.VisitWhile(w)
 }

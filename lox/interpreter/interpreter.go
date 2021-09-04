@@ -131,6 +131,17 @@ func (i *Interpreter) VisitPrint(s *stmt.Print) interface{} {
 	return nil
 }
 
+func (i *Interpreter) VisitWhile(s *stmt.While) interface{} {
+	for {
+		condition := i.evaluate(s.Condition)
+		if !i.isTruthy(condition) {
+			break
+		}
+
+		i.execute(s.Body)
+	}
+	return nil
+}
 
 // expr.Visitor interface:
 
@@ -218,6 +229,22 @@ func (i *Interpreter) VisitGrouping(e *expr.Grouping) interface{} {
 
 func (i *Interpreter) VisitLiteral(e *expr.Literal) interface{} {
 	return e.Value
+}
+
+func (i *Interpreter) VisitLogical(e *expr.Logical) interface{} {
+	left := i.evaluate(e.Left)
+
+	if e.Operator.Tokentype == token.OR {
+		if i.isTruthy(left) {
+			return left
+		}
+	} else {
+		if !i.isTruthy(left) {
+			return left
+		}
+	}
+
+	return i.evaluate(e.Right)
 }
 
 func (i *Interpreter) VisitUnary(e *expr.Unary) interface{} {

@@ -1,6 +1,6 @@
-var a = true;
-var b = "false";
-if (a) {
-  b = "true";
+var i = 0;
+
+while (i < 10) {
+  print i;
+  i = i + 1;
 }
-print b;

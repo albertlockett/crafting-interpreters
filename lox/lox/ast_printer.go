@@ -82,6 +82,10 @@ func (a *AstPrinter ) VisitBlock(b *stmt.Block) interface{} {
 	return strings.Join(vals, "")
 }
 
+func (a *AstPrinter) VisitWhile(w *stmt.While) interface{} {
+	return fmt.Sprintf("(while %s %s)", a.Print(w.Condition), a.PrintStmt(w.Body))
+}
+
 // expr.Visitor interface
 
 func (a *AstPrinter) VisitAssignment(e *expr.Assignment) interface{} {
@@ -104,6 +108,10 @@ func (a *AstPrinter) VisitLiteral(e *expr.Literal) interface{} {
 		return fmt.Sprintf(`"%s"`, str)
 	}
 	return fmt.Sprintf("%v", e.Value)
+}
+
+func (a *AstPrinter) VisitLogical(e *expr.Logical) interface{} {
+	return a.parenthesize(e.Operator.Lexeme, e.Left, e.Right)
 }
 
 func (a *AstPrinter) VisitUnary(e *expr.Unary) interface{} {
