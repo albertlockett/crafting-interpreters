@@ -54,6 +54,18 @@ func (a *AstPrinter) VisitExpressionStmt(s *stmt.ExpressionStmt) interface {} {
 	return a.withSemicolon(s.Expression.Accept(a));
 }
 
+func (a *AstPrinter) VisitIfStmt(s *stmt.IfStmt) interface{} {
+	vals := make([]string, 0)
+	vals = append(vals, "if '('")
+	vals = append(vals, fmt.Sprintf("%s", a.Print(s.Condition)))
+	vals = append(vals, "')'")
+	vals = append(vals, fmt.Sprintf("%s", a.PrintStmt(s.ThenBranch)))
+	if s.ElseBranch != nil {
+		vals = append(vals, fmt.Sprintf("%s", a.PrintStmt(s.ElseBranch)))
+	}
+	return strings.Join(vals, " ")
+}
+
 func (a *AstPrinter ) VisitPrint(s *stmt.Print) interface{} {
 	return a.withSemicolon(a.parenthesize("print", s.Expression))
 }

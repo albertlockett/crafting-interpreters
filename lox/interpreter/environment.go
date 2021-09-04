@@ -20,12 +20,17 @@ func newEnvironment(enclosing *Environment) *Environment {
 func (e *Environment) assign(token *token.Token, value interface{}) {
 	if _, ok := e.values[token.Lexeme]; ok {
 		e.values[token.Lexeme] = value
+		return
 	}
 
-	panic(&RuntimeError{
-		Line:    token.Line,
-		message: fmt.Sprintf("Undefined variable %s.", token.Lexeme),
-	})
+	if e.enclosing != nil {
+		e.enclosing.assign(token, value)
+	} else {
+		panic(&RuntimeError{
+			Line:    token.Line,
+			message: fmt.Sprintf("Undefined variable %s.", token.Lexeme),
+		})
+	}
 }
 
 func (e *Environment) define(name string, value interface{}) {

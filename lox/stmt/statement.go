@@ -11,9 +11,10 @@ type Statement interface {
 
 type Visitor interface {
 	VisitVar(*Var) interface{}
-	VisitPrint(*Print) interface{}
-	VisitExpressionStmt(*ExpressionStmt) interface{}
 	VisitBlock(*Block) interface{}
+	VisitIfStmt(*IfStmt) interface{}
+	VisitExpressionStmt(*ExpressionStmt) interface{}
+	VisitPrint(*Print) interface{}
 }
 
 type Var struct {
@@ -25,13 +26,13 @@ func (s *Var) Accept(v Visitor) interface{} {
 	return v.VisitVar(s)
 }
 
-// Print
-type Print struct {
-	Expression expr.Expr
+// Block
+type Block struct {
+	Statements []Statement
 }
 
-func (p *Print) Accept(v Visitor) interface{} {
-	return v.VisitPrint(p)
+func (b *Block) Accept(v Visitor) interface{} {
+	return v.VisitBlock(b)
 }
 
 // Expression
@@ -43,11 +44,22 @@ func (e *ExpressionStmt) Accept(v Visitor) interface{} {
 	return v.VisitExpressionStmt(e)
 }
 
-// Block
-type Block struct {
-	Statements []Statement
+// If
+type IfStmt struct {
+	Condition  expr.Expr
+	ThenBranch Statement
+	ElseBranch Statement
 }
 
-func (b *Block) Accept(v Visitor) interface{} {
-	return v.VisitBlock(b)
+func (i *IfStmt) Accept(v Visitor) interface{} {
+	return v.VisitIfStmt(i)
+}
+
+// Print
+type Print struct {
+	Expression expr.Expr
+}
+
+func (p *Print) Accept(v Visitor) interface{} {
+	return v.VisitPrint(p)
 }

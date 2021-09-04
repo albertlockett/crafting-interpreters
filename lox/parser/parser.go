@@ -77,17 +77,57 @@ func (p *Parser) varDeclaration() (stmt.Statement, error) {
 }
 
 // statement -> exprStmt
+//            | ifStmt
 //						| printStmt
 //						| block
 func (p *Parser) statement() (stmt.Statement, error) {
+	if p.match(token.IF) {
+		return p.ifStmt()
+	}
 	if p.match(token.PRINT) {
 		return p.printStatement()
 	}
 	if p.match(token.LEFT_BRACE) {
 		return p.block()
 	}
-	// TODO we need expression statement ...
 	return p.expressionStmt()
+}
+
+// ifStmt -> "if" "(" expression ")" statement ( "else" statement )?
+func (p *Parser) ifStmt() (stmt.Statement, error) {
+	_, err := p.consume(token.LEFT_PAREN, "Expect '(' after 'if'.")
+	if err != nil {
+		return nil, err
+	}
+
+	condition, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.consume(token.RIGHT_PAREN, "Expect ')' after if cnondition")
+	if err != nil {
+		return nil, err
+	}
+
+	thenBranch, err := p.statement()
+	if err != nil {
+		return nil, err
+	}
+
+	var elseBranch stmt.Statement = nil
+	if p.match(token.ELSE) {
+		elseBranch, err = p.statement()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &stmt.IfStmt{
+		Condition: condition,
+		ThenBranch: thenBranch,
+		ElseBranch: elseBranch,
+	}, nil
 }
 
 // printStmt -> "print" expression ";"

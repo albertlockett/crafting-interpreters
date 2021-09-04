@@ -105,9 +105,8 @@ func (i *Interpreter) VisitVar(v *stmt.Var) interface{} {
 	return nil
 }
 
-func (i *Interpreter) VisitPrint(s *stmt.Print) interface{} {
-	val := i.evaluate(s.Expression)
-	fmt.Printf("%s\n", i.stringify(val))
+func (i *Interpreter) VisitBlock(b *stmt.Block) interface{} {
+	i.executeBlock(b, newEnvironment(i.Env))
 	return nil
 }
 
@@ -116,10 +115,22 @@ func (i *Interpreter) VisitExpressionStmt(s *stmt.ExpressionStmt) interface{} {
 	return nil
 }
 
-func (i *Interpreter) VisitBlock(b *stmt.Block) interface{} {
-	i.executeBlock(b, newEnvironment(i.Env))
+func (i *Interpreter) VisitIfStmt(s *stmt.IfStmt) interface{} {
+	condition := i.evaluate(s.Condition)
+	if i.isTruthy(condition) {
+	 	i.execute(s.ThenBranch)
+	} else if s.ElseBranch != nil {
+		i.execute(s.ElseBranch)
+	}
 	return nil
 }
+
+func (i *Interpreter) VisitPrint(s *stmt.Print) interface{} {
+	val := i.evaluate(s.Expression)
+	fmt.Printf("%s\n", i.stringify(val))
+	return nil
+}
+
 
 // expr.Visitor interface:
 
