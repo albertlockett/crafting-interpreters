@@ -1,6 +1,9 @@
-var i = 0;
 
-while (i < 10) {
-  print i;
-  i = i + 1;
+var a = 0;
+var tmp;
+
+for (var b = 1; a < 1000; b = tmp + b) {
+  tmp = a;
+  a = b;
+  print a;
 }

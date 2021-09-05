@@ -78,11 +78,6 @@ func run(source string) error {
 		return nil
 	}
 
-	fmt.Printf("~~ AST/STATEMENTS ~~\n")
-	printer := &AstPrinter{}
-	fmt.Printf("%s\n", printer.PrintStmts(stmts))
-	fmt.Printf("~~~~~~~~~~~~~~~~~~~~\n\n")
-
 	// handle panics
 	defer func() {
 		if r := recover(); r != nil {

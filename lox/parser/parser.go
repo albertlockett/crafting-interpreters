@@ -77,11 +77,15 @@ func (p *Parser) varDeclaration() (stmt.Statement, error) {
 }
 
 // statement -> exprStmt
+//						| forStmt
 //            | ifStmt
 //						| printStmt
 //						| whileStmt
 //						| block
 func (p *Parser) statement() (stmt.Statement, error) {
+	if p.match(token.FOR) {
+		return p.forStmt()
+	}
 	if p.match(token.IF) {
 		return p.ifStmt()
 	}
@@ -95,6 +99,74 @@ func (p *Parser) statement() (stmt.Statement, error) {
 		return p.block()
 	}
 	return p.expressionStmt()
+}
+
+// forStmt -> "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement
+func (p *Parser) forStmt() (stmt.Statement, error) {
+	_, err := p.consume(token.LEFT_PAREN, "Expect '(' after 'for'.")
+	if err != nil {
+		return nil, err
+	}
+
+	var initializer stmt.Statement
+	if p.match(token.SEMICOLON) {
+		initializer = nil
+	} else if p.match(token.VAR) {
+		initializer, err = p.varDeclaration()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		initializer, err = p.expressionStmt()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var condition expr.Expr = nil
+	if !p.check(token.SEMICOLON) {
+		condition, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+	p.consume(token.SEMICOLON, "Expect ';' after 'for' condition.")
+
+	var increment expr.Expr = nil
+	if !p.check(token.SEMICOLON) {
+		increment, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	p.consume(token.RIGHT_PAREN, "Expect ')' after 'for' definition.")
+
+	var body stmt.Statement
+	body, err = p.statement()
+	if err != nil {
+		return nil, err
+	}
+
+	if increment != nil {
+		body = &stmt.Block{
+			Statements: []stmt.Statement{
+				body,
+				&stmt.ExpressionStmt{Expression: increment},
+			},
+		}
+	}
+
+	if condition == nil {
+		condition = &expr.Literal{Value: true}
+	}
+	body = &stmt.While{Condition: condition, Body: body}
+
+	if initializer != nil {
+		body = &stmt.Block{Statements: []stmt.Statement{initializer, body}}
+	}
+
+	return body, nil
 }
 
 // ifStmt -> "if" "(" expression ")" statement ( "else" statement )?
@@ -159,7 +231,7 @@ func (p *Parser) while() (stmt.Statement, error) {
 		return nil, err
 	}
 
-	_, err = p.consume(token.RIGHT_PAREN, "Expect ')' after while condition.");
+	_, err = p.consume(token.RIGHT_PAREN, "Expect ')' after while condition.")
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +239,7 @@ func (p *Parser) while() (stmt.Statement, error) {
 	body, err := p.statement()
 
 	return &stmt.While{
-		Body: body,
+		Body:      body,
 		Condition: condition,
 	}, nil
 }
@@ -250,8 +322,8 @@ func (p *Parser) or() (expr.Expr, error) {
 			return nil, err
 		}
 		expression = &expr.Logical{
-			Left: expression,
-			Right: right,
+			Left:     expression,
+			Right:    right,
 			Operator: operator,
 		}
 	}
@@ -273,8 +345,8 @@ func (p *Parser) and() (expr.Expr, error) {
 			return nil, err
 		}
 		expression = &expr.Logical{
-			Left: expression,
-			Right: right,
+			Left:     expression,
+			Right:    right,
 			Operator: operator,
 		}
 	}
