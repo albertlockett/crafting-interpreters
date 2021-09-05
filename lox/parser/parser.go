@@ -441,7 +441,7 @@ func (p *Parser) factor() (expr.Expr, error) {
 }
 
 // unary 	-> ( "!" | "-" ) unary
-//				|  primary
+//				|  call
 func (p *Parser) unary() (expr.Expr, error) {
 	if p.match(token.BANG, token.MINUS) {
 		operator := p.previous()
@@ -451,8 +451,52 @@ func (p *Parser) unary() (expr.Expr, error) {
 		}
 		return &expr.Unary{Operator: operator, Right: right}, nil
 	}
-	return p.primary()
+	return p.call()
 }
+
+// call      -> primary ("(" arguments? ")")*
+// arguments -> expression ("," expression )*
+func (p *Parser) call() (expr.Expr, error) {
+	expression, err := p.primary()
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		if p.match(token.LEFT_PAREN) {
+			expression, err = p.finishCall(expression)
+		} else {
+			break
+		}
+	}
+	return expression, nil
+}
+
+func (p *Parser) finishCall(callee expr.Expr) (expr.Expr, error) {
+	arguments := make([]expr.Expr, 0)
+	if !p.check(token.RIGHT_PAREN) {
+		for {
+			a, err := p.expression()
+			if err != nil {
+				return nil, err
+			}
+			if len(arguments) >= 255 {
+				p.error(p.peek(), "Cannot have more than 255 arguments.")
+			}
+			arguments = append(arguments, a)
+			if p.match(token.COMMA) {
+				break
+			}
+		}
+	}
+	paren, _ := p.consume(token.RIGHT_PAREN, "Expect ')' after arguments.")
+	return &expr.Call{
+		Arguments: arguments,
+		Callee: callee,
+		Paren: paren,
+	}, nil
+}
+
 
 // primary  -> NUMBER | STRING | "true" | "false" | "nil"
 //					|  "(" expression ")"

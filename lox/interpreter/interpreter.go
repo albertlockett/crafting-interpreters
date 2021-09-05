@@ -13,9 +13,12 @@ type Interpreter struct {
 }
 
 func NewInterpreter() *Interpreter {
-	return &Interpreter{
-		Env: newEnvironment(nil),
-	}
+	var clock Callable
+	clock = &Clock{}
+
+	globals := newEnvironment(nil)
+	globals.define("clock", clock)
+	return &Interpreter{ Env: globals, }
 }
 
 type RuntimeError struct {
@@ -118,7 +121,7 @@ func (i *Interpreter) VisitExpressionStmt(s *stmt.ExpressionStmt) interface{} {
 func (i *Interpreter) VisitIfStmt(s *stmt.IfStmt) interface{} {
 	condition := i.evaluate(s.Condition)
 	if i.isTruthy(condition) {
-	 	i.execute(s.ThenBranch)
+		i.execute(s.ThenBranch)
 	} else if s.ElseBranch != nil {
 		i.execute(s.ElseBranch)
 	}
@@ -221,6 +224,32 @@ func (i *Interpreter) VisitBinary(e *expr.Binary) interface{} {
 		return dl * dr
 	}
 	return nil // TODO
+}
+
+func (i *Interpreter) VisitCallExpr(e *expr.Call) interface{} {
+	callee := i.evaluate(e.Callee)
+
+	args := make([]interface{}, 0)
+	for _, arg := range e.Arguments {
+		args = append(args, i.evaluate(arg))
+	}
+
+	function, ok := callee.(Callable)
+	if !ok {
+		panic(&RuntimeError{
+			message: "Can only call functions and classes.",
+			Line:    e.Paren.Line,
+		})
+	}
+
+	if len(args) != function.Arity() {
+		panic(&RuntimeError{
+			message: fmt.Sprintf("Expected %d arguments but got %d", function.Arity(), len(args)),
+			Line:    e.Paren.Line,
+		})
+	}
+
+	return function.Call(i, args)
 }
 
 func (i *Interpreter) VisitGrouping(e *expr.Grouping) interface{} {
