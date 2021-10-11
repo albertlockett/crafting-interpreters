@@ -12,6 +12,7 @@ type Statement interface {
 type Visitor interface {
 	VisitVar(*Var) interface{}
 	VisitBlock(*Block) interface{}
+	VisitFunction(*Function) interface{}
 	VisitIfStmt(*IfStmt) interface{}
 	VisitExpressionStmt(*ExpressionStmt) interface{}
 	VisitPrint(*Print) interface{}
@@ -43,6 +44,17 @@ type ExpressionStmt struct {
 
 func (e *ExpressionStmt) Accept(v Visitor) interface{} {
 	return v.VisitExpressionStmt(e)
+}
+
+// Function
+type Function struct {
+	Name   *token.Token
+	Params []*token.Token
+	Body   []Statement
+}
+
+func (f *Function) Accept(v Visitor) interface{} {
+	return v.VisitFunction(f)
 }
 
 // If
