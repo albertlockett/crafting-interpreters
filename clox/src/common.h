@@ -6,4 +6,6 @@
 #include <stdint.h>
 #include "value.h"
 
+#define DEBUG_TRACE_EXECUTION
+
 #endif
